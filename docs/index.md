@@ -12,6 +12,7 @@
 4. `docs/template-adoption-checklist.md`：在把模板克隆为真实项目时逐项检查。
 5. `docs/template-design.md`：需要理解模板设计取舍、非目标和初始验收标准时再读。
 6. `docs/ai-agent-guide.md`：使用 AI 编码代理维护项目时阅读。
+7. `docs/adr/`：需要追溯架构决策和后续演进方向时阅读。
 
 ## 文档定位
 
@@ -24,11 +25,12 @@
 | `docs/template-adoption-checklist.md` | 模板落地检查清单，说明克隆为真实项目时要改什么、不要改什么 | 项目初始化人员 |
 | `docs/template-design.md` | 模板设计说明，记录模板目标、非目标、架构和验收标准 | 维护者、架构决策者 |
 | `docs/ai-agent-guide.md` | AI 开发指南，说明 AI 修改常见任务时的操作路径和验证命令 | AI 编码代理、审查者 |
+| `docs/adr/` | 架构决策记录，记录重要取舍、约束和演进方向 | 维护者、架构决策者、AI 编码代理 |
 
 ## 命名规则
 
 - 面向操作流程的文档使用 `*-guide.md`。
 - 面向检查清单的文档使用 `*-checklist.md`。
 - 面向设计背景和决策的文档使用 `*-design.md`。
+- 架构决策记录放在 `docs/adr/`，文件名使用 `NNNN-short-title.md`。
 - 仓库根目录只保留项目入口、代理规则和构建运行所需文件；长期文档默认放入 `docs/`。
-

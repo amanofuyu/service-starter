@@ -127,6 +127,23 @@ Ping(context.Context) error
 - `internal/health`：`/healthz` 和 `/readyz`
 - `internal/observability`：可选 OpenTelemetry tracing
 
+## 架构演进方向
+
+当前项目是轻量的分层装配式模板，不是严格洋葱模型，也不是完整的面向切片架构。这样设计是有意为之：模板阶段真实业务很少，过早引入 Clean Architecture、DDD 分层、repository 框架或代码生成，会让新项目先承担不必要的结构成本。
+
+后续新增业务时，优先保持 `internal/app` 负责装配、`internal/httpserver` 负责路由和 middleware、基础设施包负责连接和适配。不要把复杂业务逻辑继续堆进路由闭包。
+
+当项目出现多个真实业务能力，并且每个能力的 handler、usecase、store 或 model 开始成组变化时，再逐步演进为按业务切片组织：
+
+```text
+internal/httpserver       路由注册和 middleware
+internal/<feature>        业务切片，包含 handler/usecase/store/model
+internal/database         数据库连接和通用基础设施
+internal/health           横切健康检查
+```
+
+架构演进的取舍记录放在 `docs/adr/`。修改项目结构、引入新的业务组织方式或添加会影响长期边界的依赖前，先补一条 ADR，说明背景、决策、后果和替代方案。
+
 ## 代码扩展规则
 
 新增业务能力时优先保持以下边界：
