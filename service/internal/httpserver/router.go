@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"service-starter/service/internal/health"
 )
@@ -27,5 +29,24 @@ func NewRouter(serviceName string, deps health.Dependencies) http.Handler {
 		})
 	})
 
-	return r
+	return withMiddleware(serviceName, r)
+}
+
+// withMiddleware 给所有路由统一增加请求标识、panic 恢复和 HTTP tracing。
+func withMiddleware(serviceName string, next http.Handler) http.Handler {
+	handler := middleware.Recoverer(next)
+	handler = middleware.RealIP(handler)
+	handler = requestIDResponseHeader(handler)
+	handler = middleware.RequestID(handler)
+	return otelhttp.NewHandler(handler, serviceName)
+}
+
+// requestIDResponseHeader 把 chi 生成或读取的 request id 回写给调用方，便于日志关联。
+func requestIDResponseHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if requestID := middleware.GetReqID(r.Context()); requestID != "" {
+			w.Header().Set(middleware.RequestIDHeader, requestID)
+		}
+		next.ServeHTTP(w, r)
+	})
 }

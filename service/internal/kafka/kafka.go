@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"strings"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -19,6 +20,17 @@ func NewChecker(brokers []string) (*Checker, error) {
 		return nil, err
 	}
 	return &Checker{client: client}, nil
+}
+
+// TopicName 生成统一的 Kafka topic 名称，便于本地、预发和生产通过前缀隔离。
+func TopicName(prefix, serviceName, suffix string) string {
+	prefix = strings.TrimSpace(prefix)
+	serviceName = strings.TrimSpace(serviceName)
+	suffix = strings.TrimSpace(suffix)
+	if prefix == "" {
+		return serviceName + "." + suffix
+	}
+	return prefix + "." + serviceName + "." + suffix
 }
 
 // Ping 用于 /readyz 判断 Kafka broker 是否可达。

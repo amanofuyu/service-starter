@@ -69,11 +69,7 @@ func Run(ctx context.Context) error {
 	}
 
 	// readiness 依赖在这里注入；Kafka checker 为空时 /readyz 会自动跳过 Kafka。
-	server := &http.Server{
-		Addr:              ":" + cfg.ServicePort,
-		Handler:           httpserver.NewRouter(cfg.OTELServiceName, health.Dependencies{Postgres: pgPool, Redis: redisClient, Kafka: kafkaChecker}),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
+	server := newServer(cfg, health.Dependencies{Postgres: pgPool, Redis: redisClient, Kafka: kafkaChecker})
 
 	// signal.NotifyContext 会在收到 Ctrl+C(SIGINT) 或容器停止(SIGTERM) 时取消 runCtx。
 	runCtx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
@@ -103,5 +99,16 @@ func Run(ctx context.Context) error {
 	case err := <-errCh:
 		// 如果 server 自己提前退出，直接把错误交给 main，由 main 记录并结束进程。
 		return err
+	}
+}
+
+func newServer(cfg config.Config, deps health.Dependencies) *http.Server {
+	return &http.Server{
+		Addr:              ":" + cfg.ServicePort,
+		Handler:           httpserver.NewRouter(cfg.OTELServiceName, deps),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 }

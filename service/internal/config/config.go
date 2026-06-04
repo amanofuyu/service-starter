@@ -3,7 +3,9 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -61,8 +63,48 @@ func Load() (Config, error) {
 	default:
 		return Config{}, errors.New("OTEL_TRACES_EXPORTER must be either none or otlp")
 	}
+	if err := validatePort("SERVICE_PORT", cfg.ServicePort); err != nil {
+		return Config{}, err
+	}
+	if err := validateURLScheme("DATABASE_URL", cfg.DatabaseURL, "postgres", "postgresql"); err != nil {
+		return Config{}, err
+	}
+	if err := validateURLScheme("REDIS_URL", cfg.RedisURL, "redis", "rediss"); err != nil {
+		return Config{}, err
+	}
+	if cfg.OTELTracesExporter == "otlp" {
+		if cfg.OTELExporterOTLPEnd == "" {
+			return Config{}, errors.New("OTEL_EXPORTER_OTLP_ENDPOINT is required when OTEL_TRACES_EXPORTER is otlp")
+		}
+		if err := validateURLScheme("OTEL_EXPORTER_OTLP_ENDPOINT", cfg.OTELExporterOTLPEnd, "http", "https"); err != nil {
+			return Config{}, err
+		}
+	}
 
 	return cfg, nil
+}
+
+// validatePort 确认端口是 TCP/UDP 常见的 1-65535 范围。
+func validatePort(key, value string) error {
+	port, err := strconv.Atoi(value)
+	if err != nil || port < 1 || port > 65535 {
+		return fmt.Errorf("%s must be a port between 1 and 65535", key)
+	}
+	return nil
+}
+
+// validateURLScheme 校验 URL 格式和协议，避免启动后才暴露明显配置错误。
+func validateURLScheme(key, value string, allowed ...string) error {
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return fmt.Errorf("%s must be a valid URL", key)
+	}
+	for _, scheme := range allowed {
+		if parsed.Scheme == scheme {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s must use one of these schemes: %s", key, strings.Join(allowed, ", "))
 }
 
 // getenvDefault 将空字符串视为未设置，避免空环境变量覆盖默认值。
