@@ -1,4 +1,4 @@
-# 微服务基础项目开发文档
+# 模板设计说明
 
 ## 1. 项目目标
 
@@ -87,9 +87,12 @@ grafana :3000
 |-- Makefile
 |-- README.md
 |-- docs/
-|   |-- development.md
-|   |-- operations.md
-|   `-- project-template.md
+|   |-- index.md
+|   |-- developer-guide.md
+|   |-- operations-guide.md
+|   |-- template-adoption-checklist.md
+|   |-- template-design.md
+|   `-- ai-agent-guide.md
 `-- service/
     |-- Dockerfile
     |-- go.mod
@@ -508,8 +511,8 @@ Codex 开发这个基础项目时，应遵循以下规则：
 任务 7：添加项目文档
 
 - 创建 README。
-- 创建 `docs/development.md`。
-- 创建 `docs/operations.md`。
+- 创建 `docs/developer-guide.md`。
+- 创建 `docs/operations-guide.md`。
 - 记录克隆和自定义工作流。
 
 ## 18. 验收标准

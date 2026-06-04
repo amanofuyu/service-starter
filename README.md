@@ -28,10 +28,11 @@
 第一次接触这个项目时，不建议一上来阅读所有 Compose 和 Go 代码。推荐按下面顺序理解：
 
 1. 先读本 README，知道项目能启动哪些组件、有哪些接口。
-2. 再读 `service/cmd/service/main.go`，确认 Go 程序入口很薄。
-3. 接着读 `service/internal/app/app.go`，理解服务启动时依次装配哪些依赖。
-4. 然后读 `service/internal/httpserver/router.go` 和 `service/internal/health/health.go`，理解 HTTP 请求怎么被处理。
-5. 最后读 `docker-compose.yml`，把环境变量、容器名和连接地址对应起来。
+2. 再读 `docs/index.md`，确认每份文档的定位。
+3. 然后读 `service/cmd/service/main.go`，确认 Go 程序入口很薄。
+4. 接着读 `service/internal/app/app.go`，理解服务启动时依次装配哪些依赖。
+5. 然后读 `service/internal/httpserver/router.go` 和 `service/internal/health/health.go`，理解 HTTP 请求怎么被处理。
+6. 最后读 `docker-compose.yml`，把环境变量、容器名和连接地址对应起来。
 
 可以把这个项目理解成三层：
 
@@ -121,9 +122,12 @@ JSON 响应 {"ok":true,"service":"service"}
 |-- grafana/
 |   `-- provisioning/
 |-- docs/
-|   |-- development.md
-|   |-- operations.md
-|   `-- project-template.md
+|   |-- index.md
+|   |-- developer-guide.md
+|   |-- operations-guide.md
+|   |-- template-adoption-checklist.md
+|   |-- template-design.md
+|   `-- ai-agent-guide.md
 `-- service/
     |-- Dockerfile
     |-- go.mod
@@ -139,7 +143,18 @@ JSON 响应 {"ok":true,"service":"service"}
 - `service/internal/config`：从环境变量读取配置并做必要校验。
 - `service/internal/health`：实现 `/healthz` 和 `/readyz`。
 - `service/internal/httpserver`：集中注册 HTTP 路由。
-- `docs/`：开发、运维和克隆为真实项目的说明。
+- `docs/`：文档总览、开发、运维、模板设计、克隆检查和 AI 协作说明。
+
+## 文档导航
+
+先从 `docs/index.md` 查看完整文档地图。常用入口：
+
+- `docs/developer-guide.md`：本地开发、代码结构、扩展规则和测试策略。
+- `docs/operations-guide.md`：本地运行、备份、可观测性和故障排查。
+- `docs/template-adoption-checklist.md`：把模板克隆为真实项目时的检查清单。
+- `docs/template-design.md`：基础模板的设计背景、边界和初始验收标准。
+- `docs/ai-agent-guide.md`：AI 编码代理执行改动时的操作指南。
+- `AGENTS.md`：AI 编码代理必须遵守的仓库规则。
 
 ## 环境变量
 

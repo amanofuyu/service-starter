@@ -1,4 +1,4 @@
-# 项目模板检查清单
+# 模板落地检查清单
 
 将基础项目克隆为真实服务后，使用此检查清单。
 
@@ -69,9 +69,9 @@ rg "service-starter|service"
 克隆后至少同步以下文档：
 
 - `README.md`：项目名、适用场景、接口示例和启动方式。
-- `docs/development.md`：业务模块结构、本地依赖和测试策略。
-- `docs/operations.md`：环境差异、备份恢复、日志和监控入口。
-- `BASE_PROJECT_DEV_DOC.md`：如果继续保留它，注明它是基础模板设计文档，而不是业务项目设计文档。
+- `docs/developer-guide.md`：业务模块结构、本地依赖和测试策略。
+- `docs/operations-guide.md`：环境差异、备份恢复、日志和监控入口。
+- `docs/template-design.md`：如果继续保留它，注明它是基础模板设计说明，而不是业务项目设计文档。
 
 ## 自定义后验证
 

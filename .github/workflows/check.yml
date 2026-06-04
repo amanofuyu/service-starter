@@ -1,0 +1,37 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v6
+
+      - name: 设置 Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: service/go.mod
+          cache-dependency-path: service/go.sum
+
+      - name: 检查 Go 格式
+        run: make fmt-check
+
+      - name: 运行 Go 测试
+        run: make test
+
+      - name: 运行 Go 静态检查
+        run: make vet
+
+      - name: 检查 Compose 配置
+        run: make compose-check
+
