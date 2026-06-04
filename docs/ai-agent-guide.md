@@ -74,16 +74,30 @@ make check
 make compose-check
 ```
 
-`make compose-check` 使用 `.env.example` 展开 Compose 配置，用于验证模板仓库的默认配置是否完整。需要验证本机真实 `.env` 时，可以直接运行 `docker compose config`。
+`make compose-check` 使用 `.env.example` 展开 Compose 配置，用于验证模板仓库的默认配置是否完整。它不启动容器，也不证明本机真实 `.env`、端口占用或依赖运行态都可用。需要验证本机真实 `.env` 时，可以直接运行 `docker compose config`。
 
 如果改动影响服务启动、端口、环境变量或依赖健康检查，还需要执行本地冒烟验证：
 
 ```bash
+set -a
+. ./.env
+set +a
+HOST_PORT="${SERVICE_PORT:-8081}"
 docker compose up -d --build
-curl http://127.0.0.1:${SERVICE_PORT:-8081}/healthz
-curl http://127.0.0.1:${SERVICE_PORT:-8081}/readyz
-curl http://127.0.0.1:${SERVICE_PORT:-8081}/api/ping
+curl "http://127.0.0.1:${HOST_PORT}/healthz"
+curl "http://127.0.0.1:${HOST_PORT}/readyz"
+curl "http://127.0.0.1:${HOST_PORT}/api/ping"
 ```
+
+`SERVICE_PORT` 控制宿主机端口映射；容器内服务仍固定监听 `8081`。如果 `.env` 中写的是 `SERVICE_PORT=18081`，冒烟验证也必须访问 `18081`。
+
+在 WSL 中，如果当前非交互进程没有继承 `docker` 组，但 `getent group docker` 已显示当前用户属于该组，可以用下面的形式临时执行 Docker 命令：
+
+```bash
+sg docker -c 'docker compose ps'
+```
+
+这只解决当前 shell 的 Unix socket 组权限问题。若用户本身不在 `docker` 组，或 Docker Desktop/daemon 未运行，应先修复 Docker 环境，不要把权限问题归因于项目配置。
 
 默认不要将 PostgreSQL、Redis 或 Kafka 暴露到宿主机。确需暴露时绑定到 `127.0.0.1` 并更新文档。
 

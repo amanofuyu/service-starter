@@ -79,10 +79,16 @@ rg "service-starter|service"
 cd service && go test ./...
 docker compose config
 docker compose up -d
-curl http://127.0.0.1:8081/healthz
-curl http://127.0.0.1:8081/readyz
-curl http://127.0.0.1:8081/api/ping
+set -a
+. ./.env
+set +a
+HOST_PORT="${SERVICE_PORT:-8081}"
+curl "http://127.0.0.1:${HOST_PORT}/healthz"
+curl "http://127.0.0.1:${HOST_PORT}/readyz"
+curl "http://127.0.0.1:${HOST_PORT}/api/ping"
 ```
+
+`SERVICE_PORT` 控制宿主机端口映射；容器内服务仍固定监听 `8081`。如果 `.env` 中写的是 `SERVICE_PORT=18081`，上面的 `curl` 应访问 `18081`。
 
 如果启用 Kafka：
 
@@ -90,7 +96,7 @@ curl http://127.0.0.1:8081/api/ping
 docker compose -f docker-compose.yml -f docker-compose.kafka.yml config
 docker compose -f docker-compose.yml -f docker-compose.kafka.yml up -d
 docker compose -f docker-compose.yml -f docker-compose.kafka.yml --profile tools run --rm kafka-init
-curl http://127.0.0.1:8081/readyz
+curl "http://127.0.0.1:${HOST_PORT}/readyz"
 ```
 
 如果启用可观测性：
@@ -98,7 +104,7 @@ curl http://127.0.0.1:8081/readyz
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.obs.yml config
 docker compose -f docker-compose.yml -f docker-compose.obs.yml up -d
-curl http://127.0.0.1:8081/api/ping
+curl "http://127.0.0.1:${HOST_PORT}/api/ping"
 ```
 
 然后打开：

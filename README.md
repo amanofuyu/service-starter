@@ -54,9 +54,13 @@ docker compose up -d
 验证服务：
 
 ```sh
-curl http://127.0.0.1:8081/healthz
-curl http://127.0.0.1:8081/readyz
-curl http://127.0.0.1:8081/api/ping
+set -a
+. ./.env
+set +a
+HOST_PORT="${SERVICE_PORT:-8081}"
+curl "http://127.0.0.1:${HOST_PORT}/healthz"
+curl "http://127.0.0.1:${HOST_PORT}/readyz"
+curl "http://127.0.0.1:${HOST_PORT}/api/ping"
 ```
 
 预期的 ping 响应：
@@ -188,6 +192,7 @@ KAFKA_TOPIC_PREFIX
 
 - `APP_ENV` 默认是 `development`，主要用于日志和环境标识。
 - `SERVICE_PORT` 控制宿主机端口映射；容器内服务仍监听 `8081`。
+- 如果把 `.env` 中的 `SERVICE_PORT` 改成 `18081`，验证时也要访问 `http://127.0.0.1:18081/...`。
 - `OTEL_TRACES_EXPORTER=none` 时不发送链路追踪。
 - `OTEL_TRACES_EXPORTER=otlp` 时使用 `OTEL_EXPORTER_OTLP_ENDPOINT`。
 - `KAFKA_BROKERS` 为空时不会创建 Kafka checker，`/readyz` 也不会检查 Kafka。
@@ -308,9 +313,13 @@ cd service && go test ./...
 ```sh
 docker compose config
 docker compose up -d
-curl http://127.0.0.1:8081/healthz
-curl http://127.0.0.1:8081/readyz
-curl http://127.0.0.1:8081/api/ping
+set -a
+. ./.env
+set +a
+HOST_PORT="${SERVICE_PORT:-8081}"
+curl "http://127.0.0.1:${HOST_PORT}/healthz"
+curl "http://127.0.0.1:${HOST_PORT}/readyz"
+curl "http://127.0.0.1:${HOST_PORT}/api/ping"
 docker compose -f docker-compose.yml -f docker-compose.kafka.yml config
 docker compose -f docker-compose.yml -f docker-compose.obs.yml config
 ```

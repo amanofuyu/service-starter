@@ -442,10 +442,13 @@ README 应包含：
 快速验证命令：
 
 ```sh
-curl http://127.0.0.1:8081/healthz
-curl http://127.0.0.1:8081/readyz
-curl http://127.0.0.1:8081/api/ping
+HOST_PORT="${SERVICE_PORT:-8081}"
+curl "http://127.0.0.1:${HOST_PORT}/healthz"
+curl "http://127.0.0.1:${HOST_PORT}/readyz"
+curl "http://127.0.0.1:${HOST_PORT}/api/ping"
 ```
+
+这里的 `SERVICE_PORT` 是宿主机映射端口；容器内服务仍固定监听 `8081`。
 
 ## 16. Codex 开发说明
 
@@ -463,6 +466,8 @@ Codex 开发这个基础项目时，应遵循以下规则：
 - 声称完成前先运行格式化和测试。
 - 添加或升级依赖时，先联网查询当前版本。
 - 后续新增或修改的项目文档与代码注释统一使用中文书写；命令、标识符、配置键、协议名和第三方专有名词按原文保留。
+
+当前仓库可以包含轻量的 GitHub Actions 检查，用于运行格式、测试、静态检查和 Compose 配置校验。复杂发布流水线、部署编排和环境推广流程仍不是基础模板默认目标。
 
 ## 17. 初始实现任务
 
@@ -523,9 +528,7 @@ Codex 开发这个基础项目时，应遵循以下规则：
 - `docker compose up -d` 启动 PostgreSQL、Redis 和 service。
 - PostgreSQL 健康检查变为 healthy。
 - Redis 健康检查变为 healthy。
-- `curl http://127.0.0.1:8081/healthz` 成功。
-- `curl http://127.0.0.1:8081/readyz` 成功。
-- `curl http://127.0.0.1:8081/api/ping` 成功。
+- 按 `.env` 中的 `SERVICE_PORT` 访问宿主机端口时，`/healthz`、`/readyz` 和 `/api/ping` 成功。
 - `cd service && go test ./...` 成功。
 
 Kafka 模式通过条件：
@@ -551,11 +554,9 @@ Kafka 模式通过条件：
 - Kafka 业务生产者和消费者
 - 数据库迁移
 - JWT 认证
-- 请求 ID 中间件
 - 限流
 - API 版本化
-- CI 工作流
-- GitHub Actions
+- 复杂 CI/CD 发布流水线
 - OpenAPI 生成
 - 后台 worker
 - 消息队列
