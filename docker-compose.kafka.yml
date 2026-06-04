@@ -1,0 +1,72 @@
+services:
+  # 这个覆盖文件会给 Go 服务打开 Kafka readiness 检查。
+  service:
+    environment:
+      # kafka 是 Compose 网络内的服务名，宿主机不能直接用这个地址访问。
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC_PREFIX: ${KAFKA_TOPIC_PREFIX:-local}
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # 单节点 Kafka，使用 KRaft 模式，不依赖 ZooKeeper。
+  kafka:
+    image: apache/kafka:4.3.0
+    environment:
+      # CLUSTER_ID 在 KRaft 模式中标识 Kafka 集群；本地单节点固定即可。
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: 1
+      # 单节点同时承担 broker 和 controller 角色。
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      # advertised listener 告诉其他容器应该通过 kafka:9092 访问 broker。
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # 单节点环境下复制因子必须设为 1，否则内部主题无法创建。
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 1
+    volumes:
+      # Kafka 日志和元数据保存在命名卷中，容器重建后仍保留。
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      # broker API 可访问后，才认为 Kafka 已经 ready。
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - service_net
+
+  # 主题初始化工具。只在显式使用 --profile tools 时运行。
+  kafka-init:
+    image: apache/kafka:4.3.0
+    profiles:
+      - tools
+    command:
+      - sh
+      - -c
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$${KAFKA_TOPIC_PREFIX:-local}.service.events" --partitions 1 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$${KAFKA_TOPIC_PREFIX:-local}.service.commands" --partitions 1 --replication-factor 1
+    environment:
+      KAFKA_TOPIC_PREFIX: ${KAFKA_TOPIC_PREFIX:-local}
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - service_net
+
+volumes:
+  # Kafka 可选栈的数据卷，只有启用该覆盖文件时才会用到。
+  kafka_data:

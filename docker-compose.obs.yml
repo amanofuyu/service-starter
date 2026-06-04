@@ -1,0 +1,91 @@
+services:
+  # 这个覆盖文件会打开 Go 服务的 OTLP tracing。
+  service:
+    environment:
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    depends_on:
+      jaeger:
+        condition: service_started
+
+  # Jaeger 用于本地查看 trace。这里只作为开发工具，不做生产部署配置。
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    environment:
+      # 开启 OTLP collector 后，服务可以通过 http://jaeger:4318 上报 trace。
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      # Jaeger UI 只绑定本机地址。
+      - "127.0.0.1:16686:16686"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - service_net
+
+  # Loki 保存本地容器日志，Grafana 会读取它作为日志数据源。
+  loki:
+    image: grafana/loki:3.7.2
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      # 使用仓库中的 Loki 配置文件，容器内只读挂载。
+      - ./loki-config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - service_net
+
+  # Alloy 负责从 Docker socket 发现容器日志，并把日志发送到 Loki。
+  alloy:
+    image: grafana/alloy:v1.16.2
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
+      # 读取 Docker socket 只适合本地开发；生产环境需要更严格的日志采集模型。
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      loki:
+        condition: service_started
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - service_net
+
+  # Grafana 用于查看 Loki 日志。默认匿名管理员仅适合本地开发。
+  grafana:
+    image: grafana/grafana:13.0.2
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    ports:
+      # Grafana UI 只绑定本机地址。
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # provisioning 目录会自动配置 Loki 数据源。
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      loki:
+        condition: service_started
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - service_net
+
+volumes:
+  # 可观测性数据卷；删除这些卷会丢失本地日志和 Grafana 状态。
+  loki_data:
+  grafana_data:

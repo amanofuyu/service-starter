@@ -1,0 +1,118 @@
+services:
+  # PostgreSQL 是核心数据库。默认只加入 Compose 网络，不映射到宿主机端口。
+  postgres:
+    image: postgres:18.4
+    environment:
+      # 这些变量由 .env 提供，用于初始化数据库、用户和密码。
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # 使用命名卷保存数据库数据，容器重建后数据仍然保留。
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      # 健康检查通过后，依赖 postgres 的 service 才会启动。
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # 定义一个可复用的日志配置锚点，下面的服务可以用 *default-logging 引用。
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - service_net
+
+  # Redis 是核心缓存/状态依赖。默认启用 AOF，并要求密码访问。
+  redis:
+    image: redis:8.8.0-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    # 使用 shell 是为了在启动命令中读取 REDIS_PASSWORD 环境变量。
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\""]
+    volumes:
+      # Redis 数据写入 /data，AOF 文件也会保存在这个命名卷中。
+      - redis_data:/data
+    healthcheck:
+      # Redis 开启密码后，健康检查也必须带密码，否则会误判失败。
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    logging: *default-logging
+    networks:
+      - service_net
+
+  # Go 应用服务。Compose 服务名固定为 service，其他容器通过这个名字访问它。
+  service:
+    build:
+      context: ./service
+    environment:
+      # DATABASE_URL 和 REDIS_URL 在 Compose 中派生，Go 代码只读取最终 URL。
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # 容器内固定监听 8081；宿主机映射端口由 ports 中的 SERVICE_PORT 控制。
+      SERVICE_PORT: "8081"
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-service}
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4318}
+      # 默认不启用 Kafka；Kafka 覆盖文件会把它改成 kafka:9092。
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-}
+      KAFKA_TOPIC_PREFIX: ${KAFKA_TOPIC_PREFIX:-local}
+    ports:
+      # 只绑定 127.0.0.1，避免开发服务意外暴露到局域网。
+      - "127.0.0.1:${SERVICE_PORT:-8081}:8081"
+    depends_on:
+      # depends_on 控制启动顺序；运行期间仍依赖 /readyz 判断依赖是否可用。
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # 运行容器文件系统只读，降低应用意外写文件的风险。
+    read_only: true
+    security_opt:
+      # 禁止进程获得额外权限，是一个低成本的容器加固选项。
+      - no-new-privileges:true
+    logging: *default-logging
+    networks:
+      - service_net
+
+  # 手动备份工具。放在 tools profile 下，默认 docker compose up 不会启动它。
+  pg-backup:
+    image: postgres:18.4
+    profiles:
+      - tools
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+    command:
+      - sh
+      - -c
+      - |
+        # -Fc 生成 PostgreSQL 自定义格式 dump，便于后续用 pg_restore 恢复。
+        pg_dump -h postgres -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -Fc \
+          -f "/backup/$${POSTGRES_DB}-$$(date +%Y%m%d%H%M%S).dump"
+    volumes:
+      - backup_data:/backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - service_net
+
+networks:
+  # 专用网络让容器可以用服务名互相访问，例如 postgres:5432、redis:6379。
+  service_net:
+    driver: bridge
+
+volumes:
+  # 命名卷由 Docker 管理，docker compose down 默认不会删除这些数据。
+  postgres_data:
+  redis_data:
+  backup_data:
