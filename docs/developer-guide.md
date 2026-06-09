@@ -208,6 +208,41 @@ docker compose up -d + curl
   `-- 本地端到端冒烟验证
 ```
 
+## Git 提交规范
+
+提交信息采用轻量的 Conventional Commits 风格：
+
+```text
+<type>: <简短英文描述>
+```
+
+常用类型：
+
+- `feat`：新增用户可感知的功能。
+- `fix`：修复 bug 或错误行为。
+- `docs`：更新文档、注释或说明。
+- `test`：新增或调整测试。
+- `refactor`：不改变行为的代码重构。
+- `chore`：维护性改动，例如工具、脚本或配置整理。
+
+示例：
+
+```text
+docs: improve documentation system navigation
+fix: handle missing redis url
+test: cover readiness failure response
+chore: update compose image tags
+```
+
+提交规则：
+
+- 一个 commit 只表达一个逻辑改动，避免把无关文档、配置和代码混在一起。
+- 提交前查看 `git status --short` 和 `git diff --stat`，确认暂存范围符合预期。
+- 暂存文件时按逻辑分组指定路径，不使用 `git add .` 盲目提交。
+- 如果工作区已有用户改动，先区分归属；不要把用户改动混入 AI 本次改动。
+- 不提交真实 `.env`、密钥、私有数据、生成缓存或无关构建产物。
+- 提交信息默认使用英文短句；项目文档和代码注释仍使用中文。
+
 ## 常见开发问题
 
 ### `/readyz` 返回 503
