@@ -17,6 +17,17 @@
 make check
 ```
 
+文档改动按影响范围选择验证：
+
+- 纯文档文案且不涉及命令、配置、接口或运行行为时，至少做静态阅读和关键词一致性检查。
+- 涉及 Compose、环境变量、镜像 tag、端口或运行命令说明时，运行 `make compose-check`。
+- 涉及 Go 行为、接口响应、配置字段或测试策略说明时，运行 `make test`。
+- 修改文档导航、目录树或文档定位后，用 `rg` 检查相关入口是否同步，例如：
+
+```bash
+rg -n "ai-task-prompts|docs/adr|版本矩阵|make compose-check|文档改动" README.md docs
+```
+
 ## 任务输入模板
 
 当用户准备让 AI 编码代理执行较完整的开发任务时，推荐先按 `docs/ai-task-prompts.md` 组织输入。模板不是形式要求，而是为了减少误解，尤其是以下信息：

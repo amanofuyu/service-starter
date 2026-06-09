@@ -92,7 +92,9 @@ grafana :3000
 |   |-- operations-guide.md
 |   |-- template-adoption-checklist.md
 |   |-- template-design.md
-|   `-- ai-agent-guide.md
+|   |-- ai-agent-guide.md
+|   |-- ai-task-prompts.md
+|   `-- adr/
 `-- service/
     |-- Dockerfile
     |-- go.mod
@@ -243,7 +245,9 @@ KAFKA_TOPIC_PREFIX
 
 ## 7. 版本矩阵
 
-第一版实现应在代码和 Compose 中固定具体版本。实现时先联网查询当前上游版本，再填写此表。
+下表是当前实现快照，用于让模板维护者知道代码、Compose 和文档此刻固定了哪些版本；它不是要求项目永远停留在这些版本。
+
+最后核对日期：2026-06-09。升级 Go、Go module 或 Docker image tag 时，必须同步更新 `service/Dockerfile`、Compose 文件、`docs/developer-guide.md` 和本版本矩阵。升级前仍需联网确认最新稳定版本、兼容性要求和上游发布说明。
 
 | 组件 | 版本 / 镜像 tag | 说明 |
 | --- | --- | --- |
@@ -255,6 +259,17 @@ KAFKA_TOPIC_PREFIX
 | Loki | `grafana/loki:3.7.2` | 仅作为可选可观测性组件 |
 | Alloy | `grafana/alloy:v1.16.2` | 仅作为可选可观测性组件 |
 | Grafana | `grafana/grafana:13.0.2` | 仅作为可选可观测性组件 |
+
+版本来源：
+
+- Go: <https://go.dev/doc/devel/release>
+- PostgreSQL: <https://www.postgresql.org/>
+- Redis: <https://github.com/redis/redis/releases>
+- Apache Kafka: <https://kafka.apache.org/community/downloads/>
+- Jaeger: <https://www.jaegertracing.io/download/>
+- Loki: <https://github.com/grafana/loki/releases>
+- Alloy: <https://github.com/grafana/alloy/releases>
+- Grafana: <https://github.com/grafana/grafana/releases>
 
 ## 8. Go 服务要求
 

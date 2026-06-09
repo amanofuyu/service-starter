@@ -15,6 +15,14 @@
 7. `docs/ai-task-prompts.md`：需要把开发任务整理成 AI 可执行提示时阅读。
 8. `docs/adr/`：需要追溯架构决策和后续演进方向时阅读。
 
+## 按角色阅读
+
+- 后端新手：先读 `README.md`，再读 `docs/developer-guide.md`。
+- 本地运行和排障人员：先读 `README.md`，再读 `docs/operations-guide.md`。
+- 模板克隆和项目初始化人员：重点读 `docs/template-adoption-checklist.md`。
+- 模板维护者和架构决策者：先读 `docs/template-design.md`，再读 `docs/adr/`。
+- 使用 AI 编码代理的开发者：先读 `AGENTS.md`，再读 `docs/ai-agent-guide.md` 和 `docs/ai-task-prompts.md`。
+
 ## 文档定位
 
 | 文档 | 定位 | 主要读者 |

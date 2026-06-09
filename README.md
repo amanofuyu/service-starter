@@ -131,7 +131,9 @@ JSON 响应 {"ok":true,"service":"service"}
 |   |-- operations-guide.md
 |   |-- template-adoption-checklist.md
 |   |-- template-design.md
-|   `-- ai-agent-guide.md
+|   |-- ai-agent-guide.md
+|   |-- ai-task-prompts.md
+|   `-- adr/
 `-- service/
     |-- Dockerfile
     |-- go.mod
@@ -158,6 +160,8 @@ JSON 响应 {"ok":true,"service":"service"}
 - `docs/template-adoption-checklist.md`：把模板克隆为真实项目时的检查清单。
 - `docs/template-design.md`：基础模板的设计背景、边界和初始验收标准。
 - `docs/ai-agent-guide.md`：AI 编码代理执行改动时的操作指南。
+- `docs/ai-task-prompts.md`：把需求整理成 AI 可执行任务输入的提示模板。
+- `docs/adr/`：长期架构决策记录。
 - `AGENTS.md`：AI 编码代理必须遵守的仓库规则。
 
 ## 环境变量
@@ -324,8 +328,12 @@ docker compose -f docker-compose.yml -f docker-compose.kafka.yml config
 docker compose -f docker-compose.yml -f docker-compose.obs.yml config
 ```
 
-如果只修改文档或注释，至少运行：
+如果只修改文档或注释，按影响范围选择验证：
 
 ```sh
-cd service && go test ./...
+rg -n "ai-task-prompts|docs/adr|版本矩阵|make compose-check|文档改动" README.md docs
 ```
+
+- 纯文档文案且不涉及命令、配置、接口或运行行为时，至少做静态阅读和关键词一致性检查。
+- 涉及 Compose、环境变量、镜像 tag、端口或运行命令说明时，运行 `make compose-check`。
+- 涉及 Go 行为、接口响应、配置字段或测试策略说明时，运行 `make test`。
